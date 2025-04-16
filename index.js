@@ -43,5 +43,5 @@ app.use(
 app.use('/api/products', productRoutes);
 
 app.listen(PORT, () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
+  logger.info(Server running on http://localhost:${PORT});
 });
