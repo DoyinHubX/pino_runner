@@ -1,4 +1,5 @@
-/* eslint-env jest */
+// /* eslint-env jest */
+import { describe, it, expect, afterAll } from '@jest/globals';
 const request = require('supertest');
 const express = require('express');
 const bodyParser = require('body-parser');
