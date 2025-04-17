@@ -16,10 +16,105 @@
 
 
 
+// const fs = require('fs');
+// const pino = require('pino');
+
+// // Create logs directory if it doesn't exist
+// if (!fs.existsSync('logs')) {
+//   fs.mkdirSync('logs');
+// }
+
+// const logger = pino({
+//   level: 'info',
+//   redact: {
+//     paths: [
+//       '*.password',      // mask `password` field
+//       '*.token',         // mask `token` field
+//       '*.authorization', // mask `authorization` field
+//     ],
+//     censor: '[REDACTED]',
+//   },
+//   transport: {
+//     targets: [
+//       {
+//         level: 'info',
+//         target: 'pino/file',
+//         options: { destination: 'logs/app.log', mkdir: true },
+//       },
+//       {
+//         level: 'error',
+//         target: 'pino/file',
+//         options: { destination: 'logs/error.log', mkdir: true },
+//       },
+//       {
+//         level: 'info',
+//         target: 'pino-pretty', // For pretty console output
+//         options: {
+//           colorize: true,
+//           translateTime: 'SYS:standard',
+//           ignore: 'pid,hostname',
+//         },
+//       },
+//     ],
+//   },
+// });
+
+// module.exports = logger;
+
+
+
+// // config/logger.js
+// import fs from 'fs';
+// import pino from 'pino';
+
+// // Create logs directory if it doesn't exist
+// if (!fs.existsSync('logs')) {
+//   fs.mkdirSync('logs');
+// }
+
+// const logger = pino({
+//   level: 'info',
+//   redact: {
+//     paths: [
+//       '*.password',
+//       '*.token',
+//       '*.authorization',
+//     ],
+//     censor: '[REDACTED]',
+//   },
+//   transport: {
+//     targets: [
+//       {
+//         level: 'info',
+//         target: 'pino/file',
+//         options: { destination: 'logs/app.log', mkdir: true },
+//       },
+//       {
+//         level: 'error',
+//         target: 'pino/file',
+//         options: { destination: 'logs/error.log', mkdir: true },
+//       },
+//       {
+//         level: 'info',
+//         target: 'pino-pretty',
+//         options: {
+//           colorize: true,
+//           translateTime: 'SYS:standard',
+//           ignore: 'pid,hostname',
+//         },
+//       },
+//     ],
+//   },
+// });
+
+// export default logger;
+
+
+
+// config/logger.js
 const fs = require('fs');
 const pino = require('pino');
 
-// Create logs directory if it doesn't exist
 if (!fs.existsSync('logs')) {
   fs.mkdirSync('logs');
 }
@@ -27,11 +122,7 @@ if (!fs.existsSync('logs')) {
 const logger = pino({
   level: 'info',
   redact: {
-    paths: [
-      '*.password',      // mask `password` field
-      '*.token',         // mask `token` field
-      '*.authorization', // mask `authorization` field
-    ],
+    paths: ['*.password', '*.token', '*.authorization'],
     censor: '[REDACTED]',
   },
   transport: {
@@ -48,7 +139,7 @@ const logger = pino({
       },
       {
         level: 'info',
-        target: 'pino-pretty', // For pretty console output
+        target: 'pino-pretty',
         options: {
           colorize: true,
           translateTime: 'SYS:standard',
@@ -60,4 +151,3 @@ const logger = pino({
 });
 
 module.exports = logger;
-

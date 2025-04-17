@@ -18,8 +18,9 @@
 // module.exports = connectDB;
 
 
-const mongoose = require('mongoose');
-const logger = require('./logger');
+// config/database.js
+import mongoose from 'mongoose';
+import logger from './logger.js'; // Note the .js extension
 
 const connectDB = async () => {
   try {
@@ -27,9 +28,13 @@ const connectDB = async () => {
     logger.info('MongoDB connected');
   } catch (err) {
     logger.error({ error: err }, 'MongoDB connection error');
-    process.exit(1);
+    throw err;
   }
 };
 
-module.exports = connectDB;
+export default connectDB;
+
+
+
+
 

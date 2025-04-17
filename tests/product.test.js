@@ -1,71 +1,121 @@
-// /* eslint-env jest */
-import { describe, it, expect, afterAll } from '@jest/globals';
-const request = require('supertest');
-const express = require('express');
-const bodyParser = require('body-parser');
-const productRoutes = require('../routes/productRoutes');
-const mongoose = require('mongoose');
-const Product = require('../models/product');
-
-const app = express();
-app.use(bodyParser.json());
-app.use('/api/products', productRoutes);
-
-// Setup a test DB connection
-beforeAll(async () => {
-  await mongoose.connect('mongodb://localhost:27017/products_test');
-  await Product.deleteMany(); // Clean up
-});
-
-afterAll(async () => {
-  await mongoose.connection.close();
-});
+import { app } from '../index.js';
+import request from 'supertest';
+import Product from '../models/product.js';
+import mongoose from 'mongoose';
+import logger from '../config/logger.js';
 
 describe('Product API Endpoints', () => {
-  let createdId;
+  const testProduct = {
+    name: 'Jest Test Product',
+    price: 99.99,
+    quantity: 10,
+    category: 'Tests'
+  };
 
-  it('should create a new product', async () => {
-    const res = await request(app).post('/api/products').send({
-      name: 'Test Product',
-      price: 100,
-      quantity: 5
-    });
-    expect(res.statusCode).toBe(201);
-    expect(res.body.name).toBe('Test Product');
-    createdId = res.body._id;
+  // Database connection setup
+  beforeAll(async () => {
+    await mongoose.connect(process.env.MONGODB_URI);
+    logger.info('Connected to test database');
   });
 
-  it('should not create product with missing name', async () => {
-    const res = await request(app)
+  // Clean database before each test
+  beforeEach(async () => {
+    await Product.deleteMany({});
+  });
+
+  // Database disconnection
+  afterAll(async () => {
+    await mongoose.disconnect();
+    logger.info('Disconnected from test database');
+  });
+
+  it('should create a new product with valid data', async () => {
+    const response = await request(app)
       .post('/api/products')
-      .send({ price: 20 });
-    expect(res.statusCode).toBe(400); // or whatever your validation returns
-    expect(res.body.error).toBeDefined();
+      .send(testProduct);
+
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toMatchObject({
+      name: testProduct.name,
+      price: testProduct.price,
+      quantity: testProduct.quantity
+    });
   });
 
-  it('should fetch all products', async () => {
-    const res = await request(app).get('/api/products');
-    expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
+  it('should return 400 when creating product with invalid data', async () => {
+    const response = await request(app)
+      .post('/api/products')
+      .send({ invalidField: 'bad-data' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error');
   });
 
-  it('should get product by ID', async () => {
-    const res = await request(app).get(`/api/products/${createdId}`);
-    expect(res.statusCode).toBe(200);
-    expect(res.body._id).toBe(createdId);
+  it('should retrieve all products', async () => {
+    // Create test data
+    await Product.create(testProduct);
+
+    const response = await request(app)
+      .get('/api/products');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: testProduct.name
+        })
+      ])
+    );
   });
 
-  it('should update a product', async () => {
-    const res = await request(app)
-      .put(`/api/products/${createdId}`)
-      .send({ price: 150 });
-    expect(res.statusCode).toBe(200);
-    expect(res.body.price).toBe(150);
+  it('should get a product by ID', async () => {
+    const createdProduct = await Product.create(testProduct);
+    
+    const response = await request(app)
+      .get(`/api/products/${createdProduct._id}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject({
+      _id: createdProduct._id.toString(),
+      name: testProduct.name
+    });
+  });
+
+  it('should update a product successfully', async () => {
+    const createdProduct = await Product.create(testProduct);
+    
+    const updateData = { price: 149.99, quantity: 15 };
+    const response = await request(app)
+      .put(`/api/products/${createdProduct._id}`)
+      .send(updateData);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject(updateData);
   });
 
   it('should delete a product', async () => {
-    const res = await request(app).delete(`/api/products/${createdId}`);
-    expect(res.statusCode).toBe(200);
-    expect(res.body.message).toBe('Product deleted');
+    const createdProduct = await Product.create(testProduct);
+    
+    const response = await request(app)
+      .delete(`/api/products/${createdProduct._id}`);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({
+      message: 'Product deleted'
+    });
+
+    // Verify deletion
+    const verifyResponse = await request(app)
+      .get(`/api/products/${createdProduct._id}`);
+    expect(verifyResponse.statusCode).toBe(404);
+  });
+
+  it('should return 404 for non-existent product', async () => {
+    const fakeId = new mongoose.Types.ObjectId();
+    const response = await request(app)
+      .get(`/api/products/${fakeId}`);
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body).toHaveProperty('error');
   });
 });
